@@ -1,0 +1,68 @@
+# Reproducible Research Week 2
+
+## This is my Course 5 Reprpducible Research R Markdown File
+
+library(ggplot2)
+
+### Loading and Preprocessing Data
+```{r}
+activity <- read.csv("activity.csv", na.strings="")
+```
+
+### What is the mean total number of steps per day?
+```{r}
+activityFull <- activity[which(activity$steps!="NA"),]
+activityFullSum <- tapply(as.numeric(activityFull$steps), activityFull$date, sum)
+hist(activityFullSum)
+activityFullMean <- tapply(as.numeric(activityFull$steps), activityFull$date, mean)
+print(activityFullMean)
+activityFullMedian <- tapply(as.numeric(activityFull$steps), activityFull$date, median)
+print(activityFullMedian)
+```
+
+### What is the average daily activityFull pattern?
+```{r}
+activityFullPlot<-tapply(as.numeric(activityFull$steps), activityFull$interval, mean)
+plot(y=activityFullPlot, x=unique(activityFull$interval), type="l")
+names(activityFullPlot[which(activityFullPlot==max(activityFullPlot))])
+```
+
+### Imputing Missing Values
+```{r}
+length(which(activity$steps=="NA"))
+activityImpute <- activity
+names(activityFullPlot[which(activityFullPlot==max(activityFullPlot))])
+Means <- lapply(activityImpute[which(activityImpute$steps=="NA"), 1], function(x) {activityFullPlot[which(names(activityFullPlot)==activityImpute[x, 3])]})
+activityImpute <- activityImpute[which(activityImpute$steps!="NA"),]
+activityImputeNa <- activityImpute[which(activityImpute$steps=="NA"),]
+activityImputeNa <- cbind(as.character(round(unlist(Means))), as.character(activityImputeNa[,2]), activityImputeNa[,3])
+activityImputeNa <- as.data.frame(activityImputeNa)
+activityImputeNa <- colnames(c("steps", "date", "interval"))
+activityImpute <- rbind(activityImpute, activityImputeNa)
+
+activityImputeSum <- tapply(as.numeric(activityImpute$steps), activityImpute$date, sum)
+hist(activityImputeSum)
+activityImputeMean <- tapply(as.numeric(activityImpute$steps), activityImpute$date, mean)
+print(activityImputeMean)
+activityImputeMedian <- tapply(as.numeric(activityImpute$steps), activityImpute$date, median)
+print(activityImputeMedian)
+impactMean <- activityFullMean - activityImputeMean
+impactMedian <- activityFullMedian - activityImputeMedian
+print("0's mean no change")
+```
+
+### Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+days <- weekdays(as.POSIXct(activityImpute$date))
+days[which(days=="Sunday" | days=="Saturday")] <- c("weekend")
+days[which(days!="weekend")] <- c("weekday")
+activityImpute <- cbind(activityImpute, days)
+activityImputePlot<-tapply(as.numeric(activityImpute$steps), activityImpute$interval, mean)
+qplot(x=unique(activityImpute$interval), y=as.numeric(unlist(activityImputePlot)), shape="line") + facet_grid(activityImpute$days~.)+geom_line()
+
+par(mfrow=c(2,1))
+plot(data=activityImputePlot[which(activityImputePlot$days=="weekday",], y=as.numeric(unlist(activityImputePlot)), x=unique(activityImpute$interval), type="l"))
+plot(y=activityImputePlot, x=unique(activityImpute$interval), type="l")
+names(activityImputePlot[which(activityImputePlot==max(activityImputePlot))])
+```
